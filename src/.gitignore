@@ -1,0 +1,10 @@
+/lib/
+/log/
+/output/
+rpc-echo
+stamp.install
+utest-async
+utest-benchmark
+utest-common
+utest-validation
+xa-main

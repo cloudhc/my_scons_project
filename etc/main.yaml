@@ -1,0 +1,34 @@
+# Xabyss packet capture configuration file
+#
+# See http://yaml.org for basic YAML syntax.
+#
+#
+
+
+# Debugging options
+#
+debug:
+  # message verbosity
+  #
+  # 0 - nothing but fatal errors
+  # 1 - print errors
+  # 2 - and print warnings
+  # 3 - and print useful state change
+  # 4 - and print verbose things
+  # 5 - and print very verbose things
+  level: 1
+
+paths:
+  prefix: /opt/xabyss/css
+
+# Save/load settings from helper program
+settings:
+  enabled: false
+  database: mysql://xadmin:netargos12345@127.0.0.1:3306/apca_dev
+
+# RPC for control and search
+control:
+  enabled: true
+  listen-address: 127.0.0.1
+  listen-port: 10081
+  allow-cors: false

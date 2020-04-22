@@ -1,0 +1,164 @@
+# -*- python -*-
+Import('env')
+
+import os
+
+debug = env['debug']
+prefix = env['XA_PREFIX']
+install_dir = env['XA_INSTALL_DIR']
+install_prefix = install_dir + prefix
+
+env.Append(CPPPATH = ['.'])
+
+def src2obj(e, prog, fn):
+    import os
+    n = os.path.splitext(fn)[0].strip().replace('../', '')
+    return e.Object('_build/' + prog + '/' + n + '.o', fn)
+
+install_dependencies = []
+
+libfmt = File('../lib/libfmt/libfmt.a')
+libpcap = File('../lib/xpfsend/libpcap.a')
+libpfring = File('../lib/xpfsend/libpfring.a')
+
+cp_env = env.Clone()
+program = 'xa-main'
+sources = ['common/async.cpp',
+           'common/logger.cpp',
+           'common/mariadb.cpp',
+           'common/rpc_base.cpp',
+           'common/validation.cpp',
+           'common/yaml.cpp',
+           'main/main.cpp',
+           'main/options.cpp',
+           'main/rpc.cpp']
+
+cp_env.Append(CPPPATH = 'main')
+cp_env.Append(CCFLAGS = ['-mtune=atom'])
+optflags = ['-O3', '-flto', '-funroll-loops']
+
+cp_env.Append(CCFLAGS = optflags)
+cp_env.Append(LINKFLAGS = optflags)
+
+cp_env.Append(CPPDEFINES = ['BOOST_LOG_DYN_LINK', 'BOOST_SPIRIT_USE_PHOENIX_V3'])
+if debug:
+    cp_env.Append(LINKFLAGS = ['-g'])
+
+# boost
+cp_env.Append(LIBS = ['boost_thread', 'pthread', 'boost_system'])
+# boost log
+cp_env.Append(LIBS = ['boost_log_setup', 'boost_log'])
+# boost::asio
+cp_env.Append(LIBS = ['ssl', 'crypto'])
+# jsoncpp
+cp_env.ParseConfig('pkg-config --cflags --libs jsoncpp')
+# libpcap
+cp_env.Append(LIBS = ['pcap'])
+# mariadb
+cp_env.ParseConfig('mariadb_config --include')
+cp_env.Append(LIBS = ['mariadb'])
+# libyaml
+cp_env.Append(LIBS = ['yaml'])
+# message queue etc.
+cp_env.Append(LIBS = ['rt'])
+# libfmt
+cp_env.Append(LIBPATH = ['./lib/libfmt'])
+cp_env.Append(LIBS = [libfmt])
+
+objs = [src2obj(cp_env, program, k) for k in sources]
+cp_env.Program(program, objs)
+
+tgt = cp_env.Install(install_prefix + '/bin', 'xa-main')
+install_dependencies.append(install_prefix + '/bin/xa-main')
+
+####
+#### tests
+####
+
+tenv = env.Clone()
+program = 'rpc-echo'
+sources = ['tests/rpc_echo.cpp',
+           'common/rpc_base.cpp']
+
+tenv.Append(CPPDEFINES = ['UNIT_TEST'])
+tenv.ParseConfig('pkg-config --cflags --libs jsoncpp')
+tenv.Append(LIBS = ['boost_system', 'boost_thread', 'pthread'])
+tenv.Append(LIBS = ['ssl', 'crypto'])
+# libfmt
+tenv.Append(LIBPATH = ['../lib/libfmt'])
+tenv.Append(LIBS = [libfmt])
+objs = [src2obj(tenv, program, k) for k in sources]
+tenv.Program(program, objs)
+
+####
+#### catch2 unit-tests
+####
+
+tenv = env.Clone()
+program = 'utest-async'
+sources = ['tests/utest-async.cpp',
+           'common/async.cpp']
+
+optflags = ['-O3', '-flto', '-funroll-loops']
+tenv.Append(CCFLAGS = optflags)
+tenv.Append(CPPDEFINES = ['UNIT_TEST'])
+tenv.Append(CPPDEFINES = ['CATCH_CONFIG_ENABLE_BENCHMARKING'])
+tenv.Append(LIBS = ['boost_thread', 'pthread', 'boost_system'])
+
+objs = [src2obj(tenv, program, k) for k in sources]
+tenv.Program(program, objs)
+
+tenv = env.Clone()
+program = 'utest-common'
+sources = ['tests/utest-common.cpp',
+           'common/mariadb.cpp',
+           'common/validation.cpp']
+
+optflags = ['-O3', '-flto', '-funroll-loops']
+tenv.Append(CCFLAGS = optflags)
+tenv.Append(CPPDEFINES = ['UNIT_TEST'])
+tenv.Append(CPPDEFINES = ['BOOST_LOG_DYN_LINK', 'BOOST_SPIRIT_USE_PHOENIX_V3'])
+tenv.ParseConfig('mariadb_config --include')
+tenv.Append(LIBS = ['boost_thread', 'pthread', 'boost_system'])
+tenv.Append(LIBS = ['boost_log_setup', 'boost_log'])
+tenv.Append(LIBS = ['mariadb'])
+
+objs = [src2obj(tenv, program, k) for k in sources]
+tenv.Program(program, objs)
+
+tenv = env.Clone()
+program = 'utest-validation'
+sources = ['tests/utest-validation.cpp', 'common/validation.cpp']
+optflags = ['-O3', '-flto', '-funroll-loops']
+tenv.Append(CCFLAGS = optflags)
+tenv.Append(CPPDEFINES = ['UNIT_TEST'])
+tenv.Append(LIBS = ['boost_system'])
+
+objs = [src2obj(tenv, program, k) for k in sources]
+tenv.Program(program, objs)
+
+tenv = env.Clone()
+program = 'utest-benchmark'
+sources = ['tests/utest-benchmark.cpp',
+           'common/validation.cpp']
+
+optflags = ['-O3', '-flto', '-funroll-loops']
+tenv.Append(CCFLAGS = optflags)
+tenv.Append(CPPDEFINES = ['UNIT_TEST'])
+tenv.Append(CPPDEFINES = ['CATCH_CONFIG_ENABLE_BENCHMARKING'])
+
+objs = [src2obj(tenv, program, k) for k in sources]
+tenv.Program(program, objs)
+
+####
+#### test section
+####
+
+def run_unit_tests(target, source, env):
+    Execute('./src/utest-async')
+    Execute('./src/utest-common')
+    Execute('./src/utest-validation')
+    Execute('./src/utest-benchmark')
+
+utest = Command("yummy-test", None, run_unit_tests)
+AlwaysBuild(utest)

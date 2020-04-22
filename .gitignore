@@ -1,0 +1,14 @@
+*.a
+*.o
+*.pyc
+*~
+.deps
+/.sconsign.dblite
+/BUILD
+/_buildcache
+/build-setup.conf
+TAGS
+fabfile.py
+common.py
+session.py
+tags

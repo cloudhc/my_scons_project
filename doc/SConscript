@@ -1,0 +1,6 @@
+Import('env')
+
+header_path = Dir('.').path + '/_header.inc'
+footer_path = Dir('.').path + '/_footer.inc'
+
+env.Command('overview.html', ['_header.inc', '_footer.inc', 'overview.md'], 'pandoc --toc --from=markdown_github --to=html5 -H ' + header_path + ' -A ' + footer_path + ' -o $TARGET $SOURCE')
