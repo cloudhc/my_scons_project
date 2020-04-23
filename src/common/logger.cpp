@@ -145,7 +145,7 @@ void do_output_swinfo(const char* module_name)
     auto get_build_number = []() -> std::string {
         std::string build_number = "Main";
 
-        build_number += " (COMMIT-ID: 17057fa)";
+        build_number += " (COMMIT-ID: 0000000)";
 
         return build_number;
     };
