@@ -18,8 +18,6 @@ def src2obj(e, prog, fn):
 install_dependencies = []
 
 libfmt = File('../lib/libfmt/libfmt.a')
-libpcap = File('../lib/xpfsend/libpcap.a')
-libpfring = File('../lib/xpfsend/libpfring.a')
 
 cp_env = env.Clone()
 program = 'xa-main'
